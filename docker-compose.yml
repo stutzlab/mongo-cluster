@@ -2,38 +2,90 @@ version: '3.5'
 
 services:
 
+  mongo-express:
+    image: mongo-express:0.54.0
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=router1:27017
+    #   - ME_CONFIG_BASICAUTH_USERNAME=
+    #   - ME_CONFIG_BASICAUTH_PASSWORD=
+
   router1:
     build: router/.
     environment:
       - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
       - SHARD_NAME_PREFIX=shard
-      - SHARD_1_NODES=shard1-a
-      - SHARD_2_NODES=shard2-a
+      - SHARD_1_NODES=shard1-a,shard1-b
+      - SHARD_2_NODES=shard2-a,shard2-b
     ports:
       - 27111:27017
+
+  router2:
+    build: router/.
+    environment:
+      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
+      - SHARD_NAME_PREFIX=shard
+      - SHARD_1_NODES=shard1-a,shard1-b
+      - SHARD_2_NODES=shard2-a,shard2-b
+    ports:
+      - 27112:27017
 
   configsrv1:
     build: configsrv/.
     environment:
       - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
-      - 27211:27017
+      - 27311:27017
+
+  configsrv2:
+    build: configsrv/.
+    environment:
+      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
+    ports:
+      - 27312:27017
+
+  configsrv3:
+    build: configsrv/.
+    environment:
+      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
+    ports:
+      - 27413:27017
 
   shard1-a:
     build: shard/.
     environment:
       - SHARD_NAME=shard-1
-      - SHARD_NODES=shard1-a
+      - SHARD_NODES=shard1-a,shard1-b
     ports:
-      - 27311:27017
+      - 27511:27017
+
+  shard1-b:
+    build: shard/.
+    environment:
+      - SHARD_NAME=shard-1
+      - SHARD_NODES=shard1-a,shard1-b
+    ports:
+      - 27512:27017
 
   shard2-a:
     build: shard/.
     environment:
       - SHARD_NAME=shard-2
-      - SHARD_NODES=shard2-a
+      - SHARD_NODES=shard2-a,shard2-b
     ports:
-      - 27312:27017
+      - 27611:27017
+
+  shard2-b:
+    build: shard/.
+    environment:
+      - SHARD_NAME=shard-2
+      - SHARD_NODES=shard2-a,shard2-b
+    ports:
+      - 27612:27017
 
