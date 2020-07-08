@@ -134,8 +134,18 @@ volumes:
   shard2-b-data:
 ```
 
-* Run ```docker-compose up```
-  * This should take a little. Check when logs stop going crazy!
+* Run in this order to see things happening
+
+```sh
+#create shard nodes with replication sets
+docker-compose up shard1-a shard2-a shard1-b shard2-b
+#create config nodes with replication sets
+docker-compose up configsrv1 configsrv2 configsrv3
+#create routers according to config and shard nodes
+docker-compose up router1 router2
+```
+
+* This may take a while. Check when logs stop going crazy!
 
 * Show cluster status
 
@@ -143,6 +153,26 @@ volumes:
 docker-compose exec router1 mongo --port 27017
 sh.status()
 ```
+
+* Enable sharding of a collection in a database
+
+```sh
+docker-compose exec router1 mongo --port 27017
+>
+
+#create database 'sampledb'
+use sampledb
+
+#enable sharding for database
+sh.enableSharding("sampledb")
+
+#enable sharding for collection 'sample-collection'
+db.adminCommand( { shardCollection: "sampledb.sample-collection", key: { mykey: "hashed" } } )
+
+#inspect cluster status
+sh.status()
+```
+
 
 ## More resources
 

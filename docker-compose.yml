@@ -15,9 +15,9 @@ services:
   router1:
     image: stutzlab/mongo-cluster-router
     environment:
-      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-      - SHARD_NAME_PREFIX=shard
+      - SHARD_REPLICA_SET_PREFIX=shard
       - SHARD_1_NODES=shard1-a,shard1-b
       - SHARD_2_NODES=shard2-a,shard2-b
     ports:
@@ -26,9 +26,9 @@ services:
   router2:
     image: stutzlab/mongo-cluster-router
     environment:
-      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-      - SHARD_NAME_PREFIX=shard
+      - SHARD_REPLICA_SET_PREFIX=shard
       - SHARD_1_NODES=shard1-a,shard1-b
       - SHARD_2_NODES=shard2-a,shard2-b
     ports:
@@ -37,7 +37,7 @@ services:
   configsrv1:
     image: stutzlab/mongo-cluster-configsrv
     environment:
-      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27311:27017
@@ -47,7 +47,7 @@ services:
   configsrv2:
     image: stutzlab/mongo-cluster-configsrv
     environment:
-      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27312:27017
@@ -57,7 +57,7 @@ services:
   configsrv3:
     image: stutzlab/mongo-cluster-configsrv
     environment:
-      - CONFIG_SERVER_NAME=config-server
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27413:27017
@@ -67,7 +67,7 @@ services:
   shard1-a:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard1
+      - SHARD_REPLICA_SET=shard1
       - SHARD_NODES=shard1-a,shard1-b
     ports:
       - 27511:27017
@@ -77,7 +77,7 @@ services:
   shard1-b:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard1
+      - SHARD_REPLICA_SET=shard1
       - SHARD_NODES=shard1-a,shard1-b
     ports:
       - 27512:27017
@@ -87,7 +87,7 @@ services:
   shard2-a:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard2
+      - SHARD_REPLICA_SET=shard2
       - SHARD_NODES=shard2-a,shard2-b
     ports:
       - 27611:27017
@@ -97,7 +97,7 @@ services:
   shard2-b:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard2
+      - SHARD_REPLICA_SET=shard2
       - SHARD_NODES=shard2-a,shard2-b
     ports:
       - 27612:27017
