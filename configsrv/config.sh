@@ -36,9 +36,10 @@ echo "/init-configserver.js"
 cat /init-configserver.js
 
 echo "Waiting for local server to be available at 27017..."
-while ! echo exit | nc 127.0.0.1 27017; do sleep 0.5; echo "." done
+while ! nc -z 127.0.0.1 27017; do sleep 0.5; echo "."; done
 sleep 3
 
-echo "Configuring config server..."
+echo ">>> CONFIGURING CLUSTER CONFIG SERVER..."
 mongo < /init-configserver.js
+echo "CONFIGURATION OK"
 

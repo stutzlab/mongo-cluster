@@ -7,9 +7,10 @@ services:
     ports:
       - 8081:8081
     environment:
-      - ME_CONFIG_MONGODB_SERVER=router1:27017
+      - ME_CONFIG_MONGODB_SERVER=router1
     #   - ME_CONFIG_BASICAUTH_USERNAME=
     #   - ME_CONFIG_BASICAUTH_PASSWORD=
+    restart: always
 
   router1:
     build: router/.
@@ -40,6 +41,8 @@ services:
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27311:27017
+    volumes:
+      - configsrv1-data:/data
 
   configsrv2:
     build: configsrv/.
@@ -48,6 +51,8 @@ services:
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27312:27017
+    volumes:
+      - configsrv2-data:/data
 
   configsrv3:
     build: configsrv/.
@@ -56,36 +61,55 @@ services:
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
     ports:
       - 27413:27017
+    volumes:
+      - configsrv3-data:/data
 
   shard1-a:
     build: shard/.
     environment:
-      - SHARD_NAME=shard-1
+      - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
     ports:
       - 27511:27017
+    volumes:
+      - shard1-b-data:/data
 
   shard1-b:
     build: shard/.
     environment:
-      - SHARD_NAME=shard-1
+      - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
     ports:
       - 27512:27017
+    volumes:
+      - shard1-b-data:/data
 
   shard2-a:
     build: shard/.
     environment:
-      - SHARD_NAME=shard-2
+      - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
     ports:
       - 27611:27017
+    volumes:
+      - shard2-a-data:/data
 
   shard2-b:
     build: shard/.
     environment:
-      - SHARD_NAME=shard-2
+      - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
     ports:
       - 27612:27017
+    volumes:
+      - shard2-b-data:/data
 
+volumes:
+  configsrv1-data:
+  configsrv2-data:
+  configsrv3-data:
+  shard1-a-data:
+  shard1-b-data:
+  shard2-a-data:
+  shard2-b-data:
+    

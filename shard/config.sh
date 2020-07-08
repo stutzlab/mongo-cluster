@@ -35,9 +35,10 @@ echo "/init-shard.js"
 cat /init-shard.js
 
 echo "Waiting for local server to be available at 27017..."
-while ! echo exit | nc 127.0.0.1 27017; do sleep 0.5; done
+while ! nc -z 127.0.0.1 27017; do sleep 0.5; done
 sleep 3
 
-echo "Configuring shard..."
+echo "CONFIGURING CLUSTER SHARD..."
 mongo < /init-shard.js
+echo "CONFIGURATION OK"
 
