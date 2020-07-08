@@ -2,7 +2,11 @@
 
 This is a set of Mongo containers for creating clusters using Docker
 
+Check specific images used in this example at
 
+* http://github.com/stutzlab/mongo-cluster-router
+* http://github.com/stutzlab/mongo-cluster-configsrv
+* http://github.com/stutzlab/mongo-cluster-shard
 
 ## Usage
 
@@ -18,8 +22,18 @@ version: '3.5'
 
 services:
 
+  mongo-express:
+    image: mongo-express:0.54.0
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=router1
+    #   - ME_CONFIG_BASICAUTH_USERNAME=
+    #   - ME_CONFIG_BASICAUTH_PASSWORD=
+    restart: always
+
   router1:
-    build: router/.
+    image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -30,7 +44,7 @@ services:
       - 27111:27017
 
   router2:
-    build: router/.
+    image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -41,7 +55,7 @@ services:
       - 27112:27017
 
   configsrv1:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -51,7 +65,7 @@ services:
       - configsrv1-data:/data
 
   configsrv2:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -61,7 +75,7 @@ services:
       - configsrv2-data:/data
 
   configsrv3:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -71,7 +85,7 @@ services:
       - configsrv3-data:/data
 
   shard1-a:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
@@ -81,7 +95,7 @@ services:
       - shard1-b-data:/data
 
   shard1-b:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
@@ -91,7 +105,7 @@ services:
       - shard1-b-data:/data
 
   shard2-a:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
@@ -101,7 +115,7 @@ services:
       - shard2-a-data:/data
 
   shard2-b:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
@@ -109,16 +123,6 @@ services:
       - 27612:27017
     volumes:
       - shard2-b-data:/data
-
-  mongo-express:
-    image: mongo-express:0.54.0
-    ports:
-      - 8081:8081
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=router1
-    #   - ME_CONFIG_BASICAUTH_USERNAME=
-    #   - ME_CONFIG_BASICAUTH_PASSWORD=
-    restart: always
 
 volumes:
   configsrv1-data:
@@ -141,8 +145,6 @@ sh.status()
 ```
 
 ## More resources
-
-These work were used as a starting point:
 
 * https://github.com/minhhungit/mongodb-cluster-docker-compose
 

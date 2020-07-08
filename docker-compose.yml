@@ -13,7 +13,7 @@ services:
     restart: always
 
   router1:
-    build: router/.
+    image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -24,7 +24,7 @@ services:
       - 27111:27017
 
   router2:
-    build: router/.
+    image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -35,7 +35,7 @@ services:
       - 27112:27017
 
   configsrv1:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -45,7 +45,7 @@ services:
       - configsrv1-data:/data
 
   configsrv2:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -55,7 +55,7 @@ services:
       - configsrv2-data:/data
 
   configsrv3:
-    build: configsrv/.
+    image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_SERVER_NAME=config-server
       - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
@@ -65,7 +65,7 @@ services:
       - configsrv3-data:/data
 
   shard1-a:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
@@ -75,7 +75,7 @@ services:
       - shard1-b-data:/data
 
   shard1-b:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard1
       - SHARD_NODES=shard1-a,shard1-b
@@ -85,7 +85,7 @@ services:
       - shard1-b-data:/data
 
   shard2-a:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
@@ -95,7 +95,7 @@ services:
       - shard2-a-data:/data
 
   shard2-b:
-    build: shard/.
+    image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard2
       - SHARD_NODES=shard2-a,shard2-b
