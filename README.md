@@ -15,6 +15,8 @@ Check specific images used in this example at
   * 3 config servers
   * 2 shards, each with 2 replicas
 
+* We had some issues running the shards in Docker for Mac. Some shards would be freezed and Docker had to be restarted. Use a VirtualBox VM if needed.
+
 * Create docker-compose.yml
 
 ```yml
@@ -92,7 +94,7 @@ services:
     ports:
       - 27511:27017
     volumes:
-      - shard1-b-data:/data
+      - shard1-a-data:/data
 
   shard1-b:
     image: stutzlab/mongo-cluster-shard
@@ -137,15 +139,27 @@ volumes:
 * Run in this order to see things happening
 
 ```sh
+#if all services are run concurrently on the first creation, race conditions may occur and two replicasets are created at the same time. run one lime at each time
+
 #create shard nodes with replication sets
-docker-compose up shard1-a shard2-a shard1-b shard2-b
+docker-compose up shard1-a shard2-a
+docker-compose up shard1-b shard2-b
+
 #create config nodes with replication sets
-docker-compose up configsrv1 configsrv2 configsrv3
+docker-compose up configsrv1
+docker-compose up configsrv2
+docker-compose up configsrv3
+
 #create routers according to config and shard nodes
 docker-compose up router1 router2
+
+docker-compose up mongo-express
 ```
 
 * This may take a while. Check when logs stop going crazy!
+
+* Connect to mongo-express and see some internal collections
+  * open browser at http://localhost:8081
 
 * Show cluster status
 
@@ -159,20 +173,35 @@ sh.status()
 ```sh
 docker-compose exec router1 mongo --port 27017
 >
-
-#create database 'sampledb'
-use sampledb
-
-#enable sharding for database
-sh.enableSharding("sampledb")
-
-#enable sharding for collection 'sample-collection'
-db.adminCommand( { shardCollection: "sampledb.sample-collection", key: { mykey: "hashed" } } )
-
-#inspect cluster status
-sh.status()
 ```
 
+```js
+//create database 'sampledb'
+use sampledb
+
+//enable sharding for database
+sh.enableSharding("sampledb")
+
+//enable sharding for collection 'sample-collection'
+db.adminCommand( { shardCollection: "sampledb.collection1", key: { mykey: "hashed" } } )
+db.adminCommand( { shardCollection: "sampledb.collection2", key: { _id: "hashed" } } )
+
+//inspect cluster status
+sh.status()
+
+//add some data
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+db.collection2.insert({"name": _rand()})
+
+//show details about qtty of records per shard
+db.collection2.find().explain(true)
+```
 
 ## More resources
 

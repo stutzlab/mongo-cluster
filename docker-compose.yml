@@ -72,7 +72,7 @@ services:
     ports:
       - 27511:27017
     volumes:
-      - shard1-b-data:/data
+      - shard1-a-data:/data
 
   shard1-b:
     image: stutzlab/mongo-cluster-shard
