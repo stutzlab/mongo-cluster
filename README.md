@@ -66,8 +66,6 @@ services:
       - INIT_SHARD_NODES=shard2a
 ```
 
-* Run in this order to see things happening
-
 ```sh
 docker-compose up
 ```
