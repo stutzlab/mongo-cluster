@@ -41,7 +41,7 @@ services:
   router1:
     image: stutzlab/mongo-cluster-router
     environment:
-      - CONFIG_SERVER_NAME=configsrv
+      - CONFIG_REPLICA_SET=configsrv
       - CONFIG_SERVER_NODES=configsrv1
       - ADD_SHARD_NAME_PREFIX=shard
       - ADD_SHARD_1_NODES=shard1a
@@ -50,19 +50,19 @@ services:
   configsrv1:
     image: stutzlab/mongo-cluster-configsrv
     environment:
-      - CONFIG_SERVER_NAME=configsrv
+      - CONFIG_REPLICA_SET=configsrv
       - INIT_CONFIG_NODES=configsrv1
 
   shard1a:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard1
+      - SHARD_REPLICA_SET=shard1
       - INIT_SHARD_NODES=shard1a
 
   shard2a:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard2
+      - SHARD_REPLICA_SET=shard2
       - INIT_SHARD_NODES=shard2a
 ```
 
