@@ -8,7 +8,11 @@ Check specific images used in this example at
 * http://github.com/stutzlab/mongo-cluster-configsrv
 * http://github.com/stutzlab/mongo-cluster-shard
 
+For a more complete example, check [docker-compose.yml](docker-compose.yml)
+
 ## Usage
+
+### Initial cluster creation
 
 * In this example we will create a cluster with:
   * 2 routers
@@ -37,123 +41,35 @@ services:
   router1:
     image: stutzlab/mongo-cluster-router
     environment:
-      - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-      - SHARD_NAME_PREFIX=shard
-      - SHARD_1_NODES=shard1-a,shard1-b
-      - SHARD_2_NODES=shard2-a,shard2-b
-    ports:
-      - 27111:27017
-
-  router2:
-    image: stutzlab/mongo-cluster-router
-    environment:
-      - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-      - SHARD_NAME_PREFIX=shard
-      - SHARD_1_NODES=shard1-a,shard1-b
-      - SHARD_2_NODES=shard2-a,shard2-b
-    ports:
-      - 27112:27017
+      - CONFIG_SERVER_NAME=configsrv
+      - CONFIG_SERVER_NODES=configsrv1
+      - ADD_SHARD_NAME_PREFIX=shard
+      - ADD_SHARD_1_NODES=shard1a
+      - ADD_SHARD_2_NODES=shard2a
 
   configsrv1:
     image: stutzlab/mongo-cluster-configsrv
     environment:
-      - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-    ports:
-      - 27311:27017
-    volumes:
-      - configsrv1-data:/data
+      - CONFIG_SERVER_NAME=configsrv
+      - INIT_CONFIG_NODES=configsrv1
 
-  configsrv2:
-    image: stutzlab/mongo-cluster-configsrv
-    environment:
-      - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-    ports:
-      - 27312:27017
-    volumes:
-      - configsrv2-data:/data
-
-  configsrv3:
-    image: stutzlab/mongo-cluster-configsrv
-    environment:
-      - CONFIG_SERVER_NAME=config-server
-      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
-    ports:
-      - 27413:27017
-    volumes:
-      - configsrv3-data:/data
-
-  shard1-a:
+  shard1a:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard1
-      - SHARD_NODES=shard1-a,shard1-b
-    ports:
-      - 27511:27017
-    volumes:
-      - shard1-a-data:/data
+      - INIT_SHARD_NODES=shard1a
 
-  shard1-b:
-    image: stutzlab/mongo-cluster-shard
-    environment:
-      - SHARD_NAME=shard1
-      - SHARD_NODES=shard1-a,shard1-b
-    ports:
-      - 27512:27017
-    volumes:
-      - shard1-b-data:/data
-
-  shard2-a:
+  shard2a:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_NAME=shard2
-      - SHARD_NODES=shard2-a,shard2-b
-    ports:
-      - 27611:27017
-    volumes:
-      - shard2-a-data:/data
-
-  shard2-b:
-    image: stutzlab/mongo-cluster-shard
-    environment:
-      - SHARD_NAME=shard2
-      - SHARD_NODES=shard2-a,shard2-b
-    ports:
-      - 27612:27017
-    volumes:
-      - shard2-b-data:/data
-
-volumes:
-  configsrv1-data:
-  configsrv2-data:
-  configsrv3-data:
-  shard1-a-data:
-  shard1-b-data:
-  shard2-a-data:
-  shard2-b-data:
+      - INIT_SHARD_NODES=shard2a
 ```
 
 * Run in this order to see things happening
 
 ```sh
-#if all services are run concurrently on the first creation, race conditions may occur and two replicasets are created at the same time. run one lime at each time
-
-#create shard nodes with replication sets
-docker-compose up shard1-a shard2-a
-docker-compose up shard1-b shard2-b
-
-#create config nodes with replication sets
-docker-compose up configsrv1
-docker-compose up configsrv2
-docker-compose up configsrv3
-
-#create routers according to config and shard nodes
-docker-compose up router1 router2
-
-docker-compose up mongo-express
+docker-compose up
 ```
 
 * This may take a while. Check when logs stop going crazy!
@@ -186,21 +102,120 @@ sh.enableSharding("sampledb")
 db.adminCommand( { shardCollection: "sampledb.collection1", key: { mykey: "hashed" } } )
 db.adminCommand( { shardCollection: "sampledb.collection2", key: { _id: "hashed" } } )
 
-//inspect cluster status
-sh.status()
-
 //add some data
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
-db.collection2.insert({"name": _rand()})
+for(i=0;i<1000;i++) {
+  db.collection2.insert({"name": _rand(), "nbr": i})
+}
 
 //show details about qtty of records per shard
 db.collection2.find().explain(true)
+
+//inspect shard status
+sh.status()
+
+```
+
+* Explore shard structure
+
+```sh
+docker-compose exec shard1-a mongo --port 27017
+>
+```
+
+```js
+//verify shard replication nodes/configuration
+rs.conf()
+```
+
+### Add a new shard
+
+* Add the new services do docker-compose.yml
+
+```yml
+...
+  router1:
+    image: stutzlab/mongo-cluster-router
+    environment:
+      - CONFIG_SERVER_NAME=configsrv
+      - CONFIG_SERVER_NODES=configsrv1
+      - ADD_SHARD_NAME_PREFIX=shard
+      - ADD_SHARD_1_NODES=shard1a
+      - ADD_SHARD_2_NODES=shard2a
+      - ADD_SHARD_3_NODES=shard3a,shard3b
+
+  shard3a:
+    image: stutzlab/mongo-cluster-shard
+    environment:
+      - SHARD_NAME=shard3
+      - INIT_SHARD_NODES=shard3a,shard3b
+      
+  shard3b:
+    image: stutzlab/mongo-cluster-shard
+    environment:
+      - SHARD_NAME=shard3
+...
+```
+
+* Start new shard
+
+```sh
+docker-compose up shard3a shard3b
+```
+
+* Add new shard to cluster
+
+```sh
+docker-compose up router1
+```
+
+  * Some data from shard1 and shard2 will be migrated to shard3 now. This may take a while.
+  * Check if all is OK with "rs.status()" on router
+
+### Add a new node to an existing shard
+
+* Add the new service do docker-compose.yml
+
+```yml
+...
+  shard1c:
+    image: stutzlab/mongo-cluster-shard
+    environment:
+      - SHARD_NAME=shard1
+    volumes:
+      - shard1c:/data
+...
+
+```sh
+docker-compose up shard1c
+```
+
+* Add the new node to an existing shard (new replica node)
+
+  * Discover which node is currently the master by
+
+```sh
+docker-compose exec shard1a mongo --eval "rs.isMaster()"
+#look in response for "ismaster: true"
+docker-compose exec shard1b mongo --eval "rs.isMaster()"
+#look in response for "ismaster: true"
+```
+
+  * Execute the "add" command on the master node. If shard1b is the master:
+
+```sh
+docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority: 0, votes: 0 } )"
+```
+
+### Recover shard with only one replica
+
+* When a shard has only one replica, no primary will be elected and the database will be freezed
+
+* Create a new shard node service in docker-compose, and "up" it
+
+* Enter the mongo cli in the last shard node (probably not the primary one) and then reconfigure the entire replica set of the shard, adding the new shard node and use "force:true"
+
+```yml
+docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 6, host: \"shard1e\" }, { \"_id\": 3, host: \"shard1d\"} ]}, {force:true} )"
 ```
 
 ## More resources
