@@ -116,7 +116,7 @@ sh.status()
 * Explore shard structure
 
 ```sh
-docker-compose exec shard1-a mongo --port 27017
+docker-compose exec shard1a mongo --port 27017
 >
 ```
 
