@@ -37,96 +37,75 @@ services:
     environment:
       - CONFIG_REPLICA_SET=configsrv
       - INIT_CONFIG_NODES=configsrv1,configsrv2,configsrv3
-    # volumes:
-    #   - configsrv1:/data
+    volumes:
+      - configsrv1:/data
 
   configsrv2:
     image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_REPLICA_SET=configsrv
-    # volumes:
-    #   - configsrv2:/data
+    volumes:
+      - configsrv2:/data
 
   configsrv3:
     image: stutzlab/mongo-cluster-configsrv
     environment:
       - CONFIG_REPLICA_SET=configsrv
-    # volumes:
-    #   - configsrv3:/data
+    volumes:
+      - configsrv3:/data
 
   shard1a:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard1
       - INIT_SHARD_NODES=shard1a,shard1b,shard1c
-    # volumes:
-    #   - shard1a:/data
+    volumes:
+      - shard1a:/data
 
   shard1b:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard1
-    # volumes:
-    #   - shard1b:/data
+    volumes:
+      - shard1b:/data
 
   shard1c:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard1
-    # volumes:
-    #   - shard1c:/data
+    volumes:
+      - shard1c:/data
 
   shard2a:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard2
       - INIT_SHARD_NODES=shard2a,shard2b,shard2c
-    # volumes:
-    #   - shard2a:/data
+    volumes:
+      - shard2a:/data
 
   shard2b:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard2
-    # volumes:
-    #   - shard2b:/data
+    volumes:
+      - shard2b:/data
 
   shard2c:
     image: stutzlab/mongo-cluster-shard
     environment:
       - SHARD_REPLICA_SET=shard2
-    # volumes:
-    #   - shard2c:/data
+    volumes:
+      - shard2c:/data
 
-  shard2d:
-    image: stutzlab/mongo-cluster-shard
-    environment:
-      - SHARD_REPLICA_SET=shard2
-
-  shard3a:
-    image: stutzlab/mongo-cluster-shard
-    environment:
-      - SHARD_REPLICA_SET=shard3
-      - INIT_SHARD_NODES=shard3a,shard3b
-    # volumes:
-    #   - shard2a:/data
-
-  shard3b:
-    image: stutzlab/mongo-cluster-shard
-    environment:
-      - SHARD_REPLICA_SET=shard3
-    # volumes:
-    #   - shard2b:/data
-
-
-# volumes:
-#   configsrv1:
-#   configsrv2:
-#   configsrv3:
-#   shard1a:
-#   shard1b:
-#   shard1c:
-#   shard2a:
-#   shard2b:
-#   shard2c:
+volumes:
+  configsrv1:
+  configsrv2:
+  configsrv3:
+  shard1a:
+  shard1b:
+  shard1c:
+  shard2a:
+  shard2b:
+  shard2c:
     
