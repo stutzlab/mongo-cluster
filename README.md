@@ -47,6 +47,7 @@ services:
       - ADD_SHARD_1_NODES=shard1a
       - ADD_SHARD_2_NODES=shard2a
 
+
   configsrv1:
     image: stutzlab/mongo-cluster-configsrv
     environment:

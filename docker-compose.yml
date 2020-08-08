@@ -24,6 +24,13 @@ services:
     ports:
       - 27111:27017
 
+  router1-prom:
+    image: bitnami/mongodb-exporter:0.11.0
+    environment:
+      - MONGODB_URI=mongodb://router1:27017
+    ports:
+      - 9216:9216
+
   router2:
     image: stutzlab/mongo-cluster-router
     environment:
@@ -39,6 +46,13 @@ services:
       - INIT_CONFIG_NODES=configsrv1,configsrv2,configsrv3
     volumes:
       - configsrv1:/data
+
+  configsrv1-prom:
+    image: bitnami/mongodb-exporter:0.11.0
+    environment:
+      - MONGODB_URI=mongodb://configsrv1:27017
+    ports:
+      - 9217:9216
 
   configsrv2:
     image: stutzlab/mongo-cluster-configsrv
@@ -61,6 +75,13 @@ services:
       - INIT_SHARD_NODES=shard1a,shard1b,shard1c
     volumes:
       - shard1a:/data
+
+  shard1a-prom:
+    image: bitnami/mongodb-exporter:0.11.0
+    environment:
+      - MONGODB_URI=mongodb://shard1a:27017
+    ports:
+      - 9218:9216
 
   shard1b:
     image: stutzlab/mongo-cluster-shard
