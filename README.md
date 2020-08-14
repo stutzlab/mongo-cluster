@@ -217,6 +217,23 @@ docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority:
 docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 6, host: \"shard1e\" }, { \"_id\": 3, host: \"shard1d\"} ]}, {force:true} )"
 ```
 
+## Free monitoring
+
+Enter console on primary container of
+
+* configsrv
+* shard1
+* shard2
+  
+On each node, configure free monitoring
+
+```sh
+mongo
+> db.enableFreeMonitoring()
+
+Get provided URL in log and load in browser
+```
+
 ## More resources
 
 * https://github.com/minhhungit/mongodb-cluster-docker-compose

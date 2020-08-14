@@ -20,7 +20,6 @@ services:
       - ADD_SHARD_REPLICA_SET_PREFIX=shard
       - ADD_SHARD_1_NODES=shard1a,shard1b,shard1c
       - ADD_SHARD_2_NODES=shard2a,shard2b,shard2c
-      - ADD_SHARD_3_NODES=shard3a,shard3b
     ports:
       - 27111:27017
 
