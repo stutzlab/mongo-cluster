@@ -217,6 +217,20 @@ docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority:
 docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 6, host: \"shard1e\" }, { \"_id\": 3, host: \"shard1d\"} ]}, {force:true} )"
 ```
 
+## Monitoring commands
+
+* Login in container shell
+* Execute
+
+```sh
+mongo
+
+db.printCollectionStats()
+db.printReplicationInfo()
+db.printShardingStatus()
+db.printSlaveReplicationInfo()
+```
+
 ## Free monitoring
 
 Enter console on primary container of
