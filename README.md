@@ -33,12 +33,12 @@ services:
     ports:
       - 8081:8081
     environment:
-      - ME_CONFIG_MONGODB_SERVER=router1
+      - ME_CONFIG_MONGODB_SERVER=router
     #   - ME_CONFIG_BASICAUTH_USERNAME=
     #   - ME_CONFIG_BASICAUTH_PASSWORD=
     restart: always
 
-  router1:
+  router:
     image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_REPLICA_SET=configsrv
@@ -46,7 +46,6 @@ services:
       - ADD_SHARD_NAME_PREFIX=shard
       - ADD_SHARD_1_NODES=shard1a
       - ADD_SHARD_2_NODES=shard2a
-
 
   configsrv1:
     image: stutzlab/mongo-cluster-configsrv
@@ -79,14 +78,14 @@ docker-compose up
 * Show cluster status
 
 ```sh
-docker-compose exec router1 mongo --port 27017
+docker-compose exec router mongo --port 27017
 sh.status()
 ```
 
 * Enable sharding of a collection in a database
 
 ```sh
-docker-compose exec router1 mongo --port 27017
+docker-compose exec router mongo --port 27017
 >
 ```
 
@@ -126,13 +125,25 @@ docker-compose exec shard1a mongo --port 27017
 rs.conf()
 ```
 
+### Volumes
+
+* mongo-cluster-configsrv volume is at "/data"
+
+  * Mount volumes as "myvolume:/data"
+
+* mongo-cluster-shard volume is at "/data"
+
+  * Mount volumes as "myvolume:/data"
+
+* The original mongo image has volumes at /data/db and /data/configdb but they are not used by this image because those paths are used differently depending if it is a shard or configsrv instance, so we simplyfied to be just "/data" on both type of instances to avoid catastrofic errors (once I mapped just /data and Swarm created individual instance volume for /data/db and I lost my data - lucky it was a test cluster!). Swarm will still create those volumes per instance (because they are declared at parent Dockerfile) but you can ignore them.
+
 ### Add a new shard
 
-* Add the new services do docker-compose.yml
+* Add the new services to docker-compose.yml
 
 ```yml
 ...
-  router1:
+  router:
     image: stutzlab/mongo-cluster-router
     environment:
       - CONFIG_SERVER_NAME=configsrv
@@ -161,14 +172,52 @@ rs.conf()
 docker-compose up shard3a shard3b
 ```
 
-* Add new shard to cluster
+* Add shards to cluster
 
 ```sh
-docker-compose up router1
+docker-compose up router
 ```
 
-  * Some data from shard1 and shard2 will be migrated to shard3 now. This may take a while.
-  * Check if all is OK with "rs.status()" on router
+* Some data from shard1 and shard2 will be migrated to shard3 now. This may take a while.
+* Check if all is OK with "rs.status()" on router
+
+### (Swarm) Move a replica node from one Swarm Node VM to another when storage is fixed in VM
+
+* This is the case when you mount the Block Storage directly to the VM you run the node by using a "placement" to force that container to run only on that host and want to move it to another node (probably to expand the cluster size). If using NFS or another distributed volume manager, you don't need to worry about this.
+
+* Deactivate mongo nodes: `docker service scale shard1c=0`
+
+* Remove Block Storage from current VM and mount it to the new VM
+  * If using local storage, just copy the volume contents to the new VM using SCP
+
+* Change the container placement in docker-compose.yml to point to the new host. Ex:
+
+```yml
+  shard1c:
+    image: stutzlab/mongo-cluster-shard:4.4.0.8
+    environment:
+      - SHARD_REPLICA_SET=shard1
+    deploy:
+      placement:
+        constraints: [node.hostname == server13]
+    networks:
+      - mongo
+    volumes:
+      - /mnt/mongo1_shard1c:/data
+```
+
+* Update service definitions
+  * `docker stack deploy --compose-file docker-compose.yml mongo`
+
+* Check if node went online successfuly
+  * Enter newly instantiated container and execute:
+
+```sh
+mongo
+rs.status()
+```
+
+  * Verify if current node is OK
 
 ### Add a new node to an existing shard
 
@@ -199,7 +248,7 @@ docker-compose exec shard1b mongo --eval "rs.isMaster()"
 #look in response for "ismaster: true"
 ```
 
-  * Execute the "add" command on the master node. If shard1b is the master:
+* Execute the "add" command on the master node. If shard1b is the master:
 
 ```sh
 docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority: 0, votes: 0 } )"
@@ -247,6 +296,29 @@ mongo
 
 Get provided URL in log and load in browser
 ```
+
+## Crisis experiences
+
+### Nodes got exhausted in resources and cluster won't come back by itself
+
+* We had a situation where all resources exausted and containers got restarting by OOM
+
+* Some locks on volume where kept so that some containers wouldn't start OK because of locks (this is a expected behavior)
+
+* Docker daemon was strange (Swarm was not keeping the number of service instances), so we restarted the VMs
+
+* scale=0 the services that are not restarting
+
+* delete `/mongod.lock` from each mongo cluster volume
+
+* scale=1 the services again
+
+* Another option is to stop all docker services and restart again (not needed but we solved this way because things were too ugly and it worked!)
+  * `docker stack rm mongo` - be SURE all volumes are mounted OUTSIDE instances
+  * remove locks
+  * reboot VMs
+  * `docker stack deploy --compose-file docker-compose-mongo.yml mongo`
+  * this is the same procedure as restoring a backup (!)
 
 ## More resources
 
