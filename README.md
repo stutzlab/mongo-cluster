@@ -21,6 +21,8 @@ For a more complete example, check [docker-compose.yml](docker-compose.yml)
 
 * We had some issues running the shards in Docker for Mac. Some shards would be freezed and Docker had to be restarted. Use a VirtualBox VM if needed.
 
+* Although this example starts with two-replica shards, it is recommended to use three replicas minimum to ensure automatic failover in case one of the nodes comes down. See more at https://docs.mongodb.com/manual/core/replica-set-architecture-three-members/
+
 * Create docker-compose.yml
 
 ```yml
@@ -158,7 +160,7 @@ rs.conf()
     environment:
       - SHARD_NAME=shard3
       - INIT_SHARD_NODES=shard3a,shard3b
-      
+
   shard3b:
     image: stutzlab/mongo-cluster-shard
     environment:
@@ -185,10 +187,11 @@ docker-compose up router
 
 * This is the case when you mount the Block Storage directly to the VM you run the node by using a "placement" to force that container to run only on that host and want to move it to another node (probably to expand the cluster size). If using NFS or another distributed volume manager, you don't need to worry about this.
 
-* Deactivate mongo nodes: `docker service scale shard1c=0`
+* Deactivate mongo nodes: `docker service scale mongo_shard1c=0`
 
 * Remove Block Storage from current VM and mount it to the new VM
   * If using local storage, just copy the volume contents to the new VM using SCP
+  * Verify the commands you are meant to perform on the VM according to your cloud provider in order to mount the volume in filesystem
 
 * Change the container placement in docker-compose.yml to point to the new host. Ex:
 
@@ -209,6 +212,8 @@ docker-compose up router
 * Update service definitions
   * `docker stack deploy --compose-file docker-compose.yml mongo`
 
+* Check if scale for moved services is '1'
+
 * Check if node went online successfuly
   * Enter newly instantiated container and execute:
 
@@ -217,9 +222,75 @@ mongo
 rs.status()
 ```
 
-  * Verify if current node is OK
+* Verify if current node is OK
 
-### Add a new node to an existing shard
+### Add a new shard to the cluster
+
+* Create the new shard replicas services in docker-compose.yml
+
+```yml
+...
+  shard3a:
+    image: stutzlab/mongo-cluster-shard
+    environment:
+      - SHARD_REPLICA_SET=shard3
+      - INIT_SHARD_NODES=shard3a,shard3b
+    volumes:
+      - shard3a:/data
+
+  shard3b:
+    image: stutzlab/mongo-cluster-shard
+    environment:
+      - SHARD_REPLICA_SET=shard3
+    volumes:
+      - shard3b:/data
+...
+```
+
+* Create new volumes and mount to the host that will execute the shard (if using Swarm, don't forget to add a placement constraint if needed)
+
+* Change router service and add the new SHARD config environment variables
+
+```yml
+  router:
+    image: stutzlab/mongo-cluster-router:4.4.0.8
+    environment:
+      - CONFIG_REPLICA_SET=configsrv
+      - CONFIG_SERVER_NODES=configsrv1,configsrv2,configsrv3
+      - ADD_SHARD_REPLICA_SET_PREFIX=shard
+      - ADD_SHARD_1_NODES=shard1a,shard1b,shard1c
+      - ADD_SHARD_2_NODES=shard2a,shard2b,shard2c
+      - ADD_SHARD_3_NODES=shard3a,shard3b
+```
+
+* Instantiate new replica nodes and add shard to cluster
+
+```sh
+docker-compose up
+
+#check replicaset status
+docker-compose exec shard3a mongo --eval "rs.status()"
+
+#check shard status
+docker-compose exec router mongo --eval "sh.status()"
+```
+
+* This should end adding the new shard and replicas automatically
+
+* (OPTIONAL) If you want to perform the above operations step by step do
+
+```sh
+#create replicaset instances for shard3
+docker-compose up shard3a shard3b
+#check new replicaset status
+docker-compose exec shard3a mongo --eval "rs.status()"
+#change router to add the new shard to configsrv
+docker-compose up router
+#check if new shard was added successfuly
+docker-compose exec router mongo --eval "sh.status()"
+```
+
+### Add a new node to an existing shard (add a new replica to a replicaset)
 
 * Add the new service do docker-compose.yml
 
@@ -228,7 +299,7 @@ rs.status()
   shard1c:
     image: stutzlab/mongo-cluster-shard
     environment:
-      - SHARD_NAME=shard1
+      - SHARD_REPLICA_SET=shard1
     volumes:
       - shard1c:/data
 ...
@@ -256,15 +327,23 @@ docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority:
 
 ### Recover shard with only one replica
 
-* When a shard has only one replica, no primary will be elected and the database will be freezed
+* When a shard has only two replicas and one goes down, no primary will be elected and the database will be freezed until you take action to force the usage of its state in despite of the other copy (no consensus takes place and you may lose data if the remaining node was behind the node that went down).
 
-* Create a new shard node service in docker-compose, and "up" it
+* Create a new shard replica node service in docker-compose, and "up" it
 
-* Enter the mongo cli in the last shard node (probably not the primary one) and then reconfigure the entire replica set of the shard, adding the new shard node and use "force:true"
+* Enter the mongo cli in the last shard node (probably not the primary one) and then reconfigure the entire replica set with the nodes you want to be present now, adding the new shard node and use "force:true".
 
 ```yml
-docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 6, host: \"shard1e\" }, { \"_id\": 3, host: \"shard1d\"} ]}, {force:true} )"
+docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 0, host: \"shard1a\" }, { \"_id\": 4, host: \"shard1d\"} ]}, {force:true} )"
 ```
+
+## Application notes
+
+* Pay attention to the level of isolation during Write and Read operations so that you achieve the most optimal performance vs data integrity for your application. Take a look at
+  * https://docs.mongodb.com/manual/reference/read-concern/
+  * https://docs.mongodb.com/manual/reference/write-concern/
+
+* Knowledge about the [CAP Theorem](https://en.wikipedia.org/wiki/CAP_theorem) is useful to help you decide on this.
 
 ## Monitoring commands
 
