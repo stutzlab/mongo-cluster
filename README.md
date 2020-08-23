@@ -92,8 +92,11 @@ docker-compose exec router mongo --port 27017
 ```
 
 ```js
-//create database 'sampledb'
+//create sampledb
 use sampledb
+
+//switch to admin db for sharding operation
+use admin
 
 //enable sharding for database
 sh.enableSharding("sampledb")
@@ -404,4 +407,6 @@ Get provided URL in log and load in browser
 * https://github.com/minhhungit/mongodb-cluster-docker-compose
 
 * https://medium.com/@gustavo.leitao/criando-um-cluster-mongodb-com-replicaset-e-sharding-com-docker-9cb19d456b56
+
+* https://docs.mongodb.com/manual/core/security-internal-authentication/
 
