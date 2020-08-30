@@ -19,7 +19,7 @@ For a more complete example, check [docker-compose.yml](docker-compose.yml)
   * 3 config servers
   * 2 shards, each with 2 replicas
 
-* We had some issues running the shards in Docker for Mac. Some shards would be freezed and Docker had to be restarted. Use a VirtualBox VM if needed.
+* We had some issues running the shards in Docker for Mac. Some shards would be freezed and Docker had to be restarted. Use a VirtualBox VM if needed in local machine.
 
 * Although this example starts with two-replica shards, it is recommended to use three replicas minimum to ensure automatic failover in case one of the nodes comes down. See more at https://docs.mongodb.com/manual/core/replica-set-architecture-three-members/
 
@@ -105,6 +105,9 @@ sh.enableSharding("sampledb")
 db.adminCommand( { shardCollection: "sampledb.collection1", key: { mykey: "hashed" } } )
 db.adminCommand( { shardCollection: "sampledb.collection2", key: { _id: "hashed" } } )
 
+//if collection already has data, you may need to create the sharded index manually before calling the command above
+//db['collection2'].createIndex({ "_id" : "hashed" })
+
 //add some data
 for(i=0;i<1000;i++) {
   db.collection2.insert({"name": _rand(), "nbr": i})
@@ -141,6 +144,18 @@ rs.conf()
   * Mount volumes as "myvolume:/data"
 
 * The original mongo image has volumes at /data/db and /data/configdb but they are not used by this image because those paths are used differently depending if it is a shard or configsrv instance, so we simplyfied to be just "/data" on both type of instances to avoid catastrofic errors (once I mapped just /data and Swarm created individual instance volume for /data/db and I lost my data - lucky it was a test cluster!). Swarm will still create those volumes per instance (because they are declared at parent Dockerfile) but you can ignore them.
+
+### Memory considerations
+
+* Like every good database, MongoDB tries to use all available memory from the host it is running on. BE AWARE of resources exhaustion when placing two container instances of mongo on the same VM, because both will compete for memory.
+
+* To minimize this risk, this container image configures mongo to limit its internal cache to 1/2 of available memory (according to container's cgroup limit). **But this only works if you use resource limiting on the container** (deploy: resources: limits: memory on docker-compose etc).
+
+* For example, if you have a 8GB VM and place two instances of the shard container with mem resource limit set to 3.5GB each, you will probably be safe, because the container will automatically set the WiredTiger cache limit to 1.25GB for each one (it will use more memory than this because it does other tasks, but the real hit here is regarding to cache size).
+
+* If you want to fine control the size o WiredTiger cache, you can set the value using WIRED_TIGER_CACHE_SIZE_GB ENV. It is available on shard and configsrv instances.
+
+* See more at https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod
 
 ### Add a new shard
 
@@ -340,6 +355,21 @@ docker-compose exec shard1b mongo --eval "rs.add( { host: \"shard1c\", priority:
 docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", members: [ { \"_id\": 0, host: \"shard1a\" }, { \"_id\": 4, host: \"shard1d\"} ]}, {force:true} )"
 ```
 
+### Enable sharding in an already populated collection
+
+* Certify that you already have a "hashed" index in collection
+  * https://stackoverflow.com/questions/60275976/unable-to-shard-an-already-populated-collection-in-mongodb
+
+  * Example:
+
+```js
+use edidatico
+//"_id" is the collection attribute key
+db['testes-estudantes'].createIndex({ "_id" : "hashed" })
+//now an index with name "_id_hashed" was created and will be used on the next step
+db.adminCommand( { shardCollection: "edidatico.testes-estudantes", key: { _id: "hashed" } }
+```
+
 ## Application notes
 
 * Pay attention to the level of isolation during Write and Read operations so that you achieve the most optimal performance vs data integrity for your application. Take a look at
@@ -348,7 +378,7 @@ docker-compose exec shard1d mongo --eval "rs.reconfig( { \"_id\": \"shard1\", me
 
 * Knowledge about the [CAP Theorem](https://en.wikipedia.org/wiki/CAP_theorem) is useful to help you decide on this.
 
-## Monitoring commands
+## Monitoring
 
 * Login in container shell
 * Execute
@@ -361,6 +391,18 @@ db.printReplicationInfo()
 db.printShardingStatus()
 db.printSlaveReplicationInfo()
 ```
+
+* Slow Queries are automatically logged to in-memory
+  * Connect to mongos and execute
+
+```js
+use admin
+db.adminCommand( { getLog: "global" } )
+```
+
+  * Look for "slow query" entries and view the executed query along with its time
+
+* In order to send some metrics from the in-memory logs to Prometheus, use http://github.com/stutzlab/mongo-log-exporter
 
 ## Free monitoring
 
