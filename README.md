@@ -367,7 +367,55 @@ use edidatico
 //"_id" is the collection attribute key
 db['testes-estudantes'].createIndex({ "_id" : "hashed" })
 //now an index with name "_id_hashed" was created and will be used on the next step
-db.adminCommand( { shardCollection: "edidatico.testes-estudantes", key: { _id: "hashed" } }
+db.adminCommand( { shardCollection: "edidatico.testes-estudantes", key: { _id: "hashed" } })
+```
+
+### Create/restore database dumps
+
+* Create database dump to a file
+
+```sh
+mongodump -u admin --authenticationDatabase admin --archive=/tmp/sample1-dump.db --db=sample1
+```
+
+* Restore database from a dump file (same target database name)
+
+```sh
+mongorestore -u admin --authenticationDatabase admin --archive=/tmp/sample1-dump.db
+```
+
+* Restore database from a dump file to a different database name
+
+```sh
+mongorestore -u admin --authenticationDatabase admin --archive=/tmp/sample1.db --nsFrom sample1.* --nsTo sample1copy.*
+```
+
+* Check if all indexes were copied too. In some cases they were not.
+
+### Create user and assign roles
+
+```sh
+#create user in admin database so that it will be global and grant access to "sample1" database
+use admin
+db.createUser( { user: "app", pwd: "anypass", roles: [{role: "readWrite", db: "sample1"}] } )
+
+##add admin roles to the user
+use products
+db.grantRolesToUser(
+   "user1",
+   [ { role: "readAnyDatabase", db: "admin" } ]
+)
+```
+
+### Disable access to a specific database during migrations
+
+* When you take a dump for moving database to another place, remember to deny access to applications while you are in movement to avoid losing data users place on the "old" database
+
+```s
+use products
+db.revokeRolesFromUser( "user1",
+                        [ { role: "readAnyDatabase", db: "admin" } ]
+                      )
 ```
 
 ## Application notes
@@ -452,3 +500,4 @@ Get provided URL in log and load in browser
 
 * https://docs.mongodb.com/manual/core/security-internal-authentication/
 
+* https://www.mongodb.com/blog/post/sharding-pitfalls-part-iii-chunk-balancing-and
