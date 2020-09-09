@@ -400,7 +400,7 @@ use admin
 db.createUser( { user: "app", pwd: "anypass", roles: [{role: "readWrite", db: "sample1"}] } )
 
 ##add admin roles to the user
-use products
+use admin
 db.grantRolesToUser(
    "user1",
    [ { role: "readAnyDatabase", db: "admin" } ]
@@ -412,7 +412,7 @@ db.grantRolesToUser(
 * When you take a dump for moving database to another place, remember to deny access to applications while you are in movement to avoid losing data users place on the "old" database
 
 ```s
-use products
+use admin
 db.revokeRolesFromUser( "user1",
                         [ { role: "readAnyDatabase", db: "admin" } ]
                       )
